@@ -2,7 +2,7 @@
 * [Nauka podstaw programowania w Cryptol](#Nauka-podstaw-programowania-w-Cryptol)
 
 ## Nauka podstaw programowania w Cryptol
-*Ładowanie modułów 
+* Ładowanie modułów 
  Podstawową czynnością do ukończenia kursu jest ładowanie modułów z labolatoriów. Aby się sprawnie poruszać 
 na kursie należy załadować ścieżkę prostą instrukcją np...
 ```
@@ -11,7 +11,7 @@ Loading module Cryptol
 Loading module labs::Overview::Overview
 Loading module labs::Language::Basics
 ```
-*Rodzaje zmiennych 
+* Rodzaje zmiennych 
 Ćwiczenie polegające na sprawdzaniu typów zmiennych zdefiniowanych poniżej za pomocą polecenia :t. Wynik zmiennej zostanie zamieszczony w komentarzu 
 pod zmienną.
 ```
@@ -53,7 +53,7 @@ nie może mieć statycznie ustawionego typu 10 bitowej sekwencji
 varType0 = False : [10]
 ```
 Wszystkie typy powyżej były monomorficzne czyli do każdej zmiennej istniał jeden prawidłowy typ
-*Rodzaje funkcji
+* Rodzaje funkcji
 1.Funkcja zapisana w stylu Curry 
 ```
 add: [32]->[32]->[32]
@@ -107,7 +107,7 @@ funType8 = funType2 10
 funType9 = False 
 //funType9 : Bit
 ```
-*Dopasowywanie wzorców
+* Dopasowywanie wzorców
 Cryptol umożliwia wykonywanie przypisań przez pisanie wzorców na podstawie typu wartości po jej prawej stronie przykład poniżej
 ```
 Cryptol> let ab =(10,20)
@@ -132,7 +132,7 @@ Main> :set base = 2
 Main> trzybity 0b11111111
 0b111
 ```
-*Funkcje polimorficzne
+* Funkcje polimorficzne
 Cryptol zapewnia polimorficzny system typów, sam polimorfizm można określić za rodzinę typów która pozwala na przykładzie listy zapewnić
 jej wielopostaciowość. Np [n] jest rodziną typów zawierająca listy dowolnych typów
 Sztywne określanie typów może być ograniczeniem środowiska cryptol.
@@ -237,7 +237,7 @@ polyType13 = repeat`{5} (7 : [16])
 ```
 Ciekawe jest to że każde wywołanie polyType od 9-13 jest takie same. Pokazuje siłę polimorfizmu i jego dowolnośc
 w zastosowaniu. Z funkcją monomoficzna nie było by to tak możliwe.
-*Todo 
+* Todo 
 Napisac funkcje o nazwie zeroPrepend kóra poprzedza n False bity na początku m bitowego wektora bitowego input.
 Muszę skorzystać z operatora # 
 Te zadanie sprawiło mi problem. 
