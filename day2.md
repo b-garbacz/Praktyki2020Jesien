@@ -11,7 +11,7 @@ Loading module Cryptol
 Loading module labs::Overview::Overview
 Loading module labs::Language::Basics
 ```
-* Rodzaje zmiennych 
+*Rodzaje zmiennych 
 Ćwiczenie polegające na sprawdzaniu typów zmiennych zdefiniowanych poniżej za pomocą polecenia :t. Wynik zmiennej zostanie zamieszczony w komentarzu 
 pod zmienną.
 ```
@@ -53,7 +53,7 @@ nie może mieć statycznie ustawionego typu 10 bitowej sekwencji
 varType0 = False : [10]
 ```
 Wszystkie typy powyżej były monomorficzne czyli do każdej zmiennej istniał jeden prawidłowy typ
-* Rodzaje funkcji
+*Rodzaje funkcji
 1.Funkcja zapisana w stylu Curry 
 ```
 add: [32]->[32]->[32]
