@@ -1,5 +1,5 @@
 ## Praktyka dzień 1 31.08.2020
-* [Wstępne przygotowanie](#Wstępne- przygotowanie)
+* [Wstępne przygotowanie](#Wstepne- przygotowanie)
 * [Nauka podstaw programowania w Cryptol](#Nauka-podstaw-programowania-w-Cryptol)
 
 
