@@ -1,9 +1,19 @@
 ## Praktyka dzień 1 31.08.2020
-* [Postęp z dokumentacji](#Postęp-z-dokumetacji)
-* [Postęp z kursu](#Postęp-z-kursu)
-* [Setup](#setup)
+* [Wstępne przygotowanie](#Wstępne- przygotowanie)
+* [Nauka podstaw programowania w Cryptol](#Nauka-podstaw-programowania-w-Cryptol)
 
-## Postęp z dokumentacji
+
+## Wstępne przygotowanie
+* Przygotowanie środowiska
+Podstawą rozpoczęcia kursu było zainstalowanie Dockera oraz Visual Studio Code gdzie następnie pobrano kontener
+z Coryptolem  i zgodnie z instukcjami zawartymi na stronie przygotowałem środowisko do pracy z czym zeszło się najdłużej.
+https://github.com/weaversa/cryptol-course/blob/master/INSTALL.md
+*Pierwsze kroki 
+Przechodząc do drugiego i trzeciego  rozdziału zapoznałem się z podstawowym napisaniem "Hello World" oraz wywoływaniu gotowych funkcji.
+Zapoznałem się z podstawową mechaniką używając komendy :help .
+
+
+## Nauka podstaw programowania w Cryptol
 * Podstawowe typy danych 
 1.Deklaracja liczby całkowitej 
 ```
@@ -112,12 +122,15 @@ Cryptol> let x =[1,2,3,3,4,5]
 Cryptol> x@1
 2
 ```
+
 3.3 Operator "!" służy do wyznaczania elementu tablicy pod wzdlędem wpisanego indeksu licząc od ostatniego elementu
+
 ```
 Cryptol> let x =[1,2,3,3,4,5]
 Cryptol> x!1
 4
 ```
+
 3.4 Operatory permutacji "@@" i "!!"  oba wygenerują dowolną permutacją nastomiast drugi wykona ją z indeksacją od tyłu
 ```
 invalid sequence index: 5
@@ -129,14 +142,6 @@ Cryptol> x !! y
 [19, 16, 13]
 ```
 
-## Postęp z kursu
-* Przygotowanie środowiska
-Podstawą rozpoczęcia kursu było zainstalowanie Dockera oraz Visual Studio Code gdzie następnie pobrano kontener
-z Coryptolem  i zgodnie z instukcjami zawartymi na stronie przygotowałem środowisko do pracy z czym zeszło się najdłużej.
-https://github.com/weaversa/cryptol-course/blob/master/INSTALL.md
-*Pierwsze kroki 
-Przechodząc do drugiego i trzeciego  rozdziału zapoznałem się z podstawowym napisaniem "Hello World" oraz wywoływaniu gotowych funkcji.
-Zapoznałem się z podstawową mechaniką używając komendy :help .
 
 
 
