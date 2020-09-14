@@ -1,79 +1,98 @@
+//gift_rc :[40][32]
+gift_rc =[0x00000001, 0x00000003, 0x00000007, 0x0000000F, 0x0000001F, 0x0000003E, 0x0000003D, 0x0000003B, 0x00000037, 0x0000002F,
+    0x0000001E, 0x0000003C, 0x00000039, 0x00000033, 0x00000027, 0x0000000E, 0x0000001D, 0x0000003A, 0x00000035, 0x0000002B,
+    0x00000016, 0x0000002C, 0x00000018, 0x00000030, 0x00000021, 0x00000002, 0x00000005, 0x0000000B, 0x00000017, 0x0000002E,
+    0x0000001C, 0x00000038, 0x00000031, 0x00000023, 0x00000006, 0x0000000D, 0x0000001B, 0x00000036, 0x0000002D, 0x0000001A]
 
-gift_rc :[40][8]
-gift_rc =[0x01, 0x03, 0x07, 0x0F, 0x1F, 0x3E, 0x3D, 0x3B, 0x37, 0x2F,
-    0x1E, 0x3C, 0x39, 0x33, 0x27, 0x0E, 0x1D, 0x3A, 0x35, 0x2B,
-    0x16, 0x2C, 0x18, 0x30, 0x21, 0x02, 0x05, 0x0B, 0x17, 0x2E,
-    0x1C, 0x38, 0x31, 0x23, 0x06, 0x0D, 0x1B, 0x36, 0x2D, 0x1A]
 
-key2 =[0x1 ..0x80]
-ptxt2 =[0x1 ..0x80]
 key =[ 0x00,0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F]
-ptxt =[ 0x0,0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xA, 0xB, 0xC, 0xD, 0xE, 0xF]
-y= [0x01,0x02,0x03,0x04]
+ptxt =[ 0x00,0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F]
 
-//TODO brak Ininicjalizacji dla S
 
-//Tablica macierz KS. 1/2 Initalization
+//Inicjalizacja S
+sptxt = split`{128} (join ptxt)
+S0 = reverse(sptxt @@ [0,4 .. 127])
+S1 = reverse(sptxt @@ [1,5 .. 127])
+S2 = reverse(sptxt @@ [2,6 .. 127])
+S3 = reverse(sptxt @@ [3,7 .. 127])
+
+
+//Tablica macierz KS. 1/2 Initalization - nsWi - skrót od notSplited
 KS = map (\x -> (head x) # (last x)) (groupBy`{2} (reverse (map reverse key)))
-W0 = KS @ 0
-W1 = KS @ 1
-W2 = KS @ 2
-W3 = KS @ 3
-W4 = KS @ 4
-W5 = KS @ 5
-W6 = KS @ 6
-W7 = KS @ 7
+
+nsW0 = KS @ 0 
+W0 = split`{16} nsW0
+
+nsW1 = KS @ 1
+W1 = split`{16} nsW1
+
+nsW2 = KS @ 2
+W2 = split`{16} nsW2
+
+nsW3 = KS @ 3
+W3 = split`{16} nsW3
+
+nsW4 = KS @ 4
+W4 = split`{16} nsW4
+
+nsW5 = KS @ 5
+W5 = split`{16} nsW5
+
+nsW6 = KS @ 6
+W6 = split`{16} nsW6
+
+nsW7 = KS @ 7
+W7 = split`{16} nsW7
 
 defKS =[[W0#W1],[W2#W3],[W4#W5],[W6#W7]]
-//------Od tego momentu powinna się przemieszać runda
+
+//------Od tego momentu powinna rozpocząć się funkcja gift128 i wykonać 40 razy. 
+
+  
+//Subcells- Overwrite w Cryptolu nie dziala. Aby uzyskać efekt Subcells musiały powstać nowe zmienne S0_0_0 , S1_1_1, S2_2_2, S3_3_3_3
+S1_1 = S1 ^ (S0 && S2 )
+S0_0 = S0 ^ (S1_1 && S3 )
+S2_2 = S1_1 ^ (S0_0 || S2 )
+S3_3 = S3 ^ S2_2
+S1_1_1 = S1_1 ^ S3_3
+S3_3_3 = ~S3_3
+S2_2_2 = S2_2 ^ (S0_0 && S1_1_1)
+BUFFOR_S = S0_0
+S0_0_0 = S3_3_3
+S3_3_3_3 = BUFFOR_S
+//S = S0_0_0 #S1_1_1# S2_2_2# S3_3_3_3
 
 
-//everyThird xs = [x | (1,x) <- zip (cycle [1..3]) xs]
-
-/*  
-Subcells będzie gotowe do implementacji wtedy kiedy znajdę sposób na rozmieszczenie Initialization
-S1 = S1 ^ (S0 && S2 )
-S0 = S0 ^ (S1 && S3 )
-S1 = S1 ^ (S0 || S2 )
-S3 = S3 ^ S2
-S1 = S1 ^ S3
-S3 = ~S3
-S2 = S2 ^ (S0 && S1)
-BUFFOR_S = S0
-S0 = S3
-S3 = BUFFOR
-*/
-
-/*  TODO
-PermBits
-S0 =
-S1 =
-S2 =
-S3 =
-*/
+//PermBits
+pb_S0 = S0_0_0 @@ [28,24 .. 0] # S0_0_0 @@ [31,27 .. 3] # S0_0_0 @@ [30,26 .. 2] # S0_0_0 @@ [29,25 .. 1]
+pb_S1 = S1_1_1 @@ [29,25 .. 1] # S1_1_1 @@ [28,24 .. 0] # S1_1_1 @@ [31,27 .. 3] # S1_1_1 @@ [30,26 .. 2]
+pb_S2 = S2_2_2 @@ [30,26 .. 2] # S2_2_2 @@ [29,25 .. 1] # S2_2_2 @@ [28,24 .. 0] # S2_2_2 @@ [31,27 .. 3]
+pb_S3 = S3_3_3_3 @@ [31,27 .. 3] # S3_3_3_3 @@ [30,26 .. 2] # S3_3_3_3 @@ [29,25 .. 1] # S3_3_3_3 @@ [28,24 .. 0]
 
 
-/*  
-AddRoundKey
-S2 = S2 ^ (W2 # W3)
-S1 = S1 ^ (W6 # W7)
-*/
+ 
+//AddRoundKey
+ARK_S2 = pb_S2 ^ (W2 # W3)
+ARK_S1 = pb_S1 ^ (W6 # W7)
 
-/*  TODO
-Dodawanie stałej rundowej ... Dokonczyc....
-XY = 
-S3 = S3 ^ 0X80000000 ^gift_rc
-*/
 
-/*  KS UPDATE
+//  AddRoundConstant -> 0x800000XY , gdzie XY= 00c_5c_4c_3c_2c_1c_0 -> c_i- bit
+const = split`{32} 0x80000000
+ARC_S3 = pb_S3 ^( const ^ (split`{32}(gift_rc @ 0)))
+
+
+//  KS UPDATE
 BUFFOR_W6 = W6>>>2 
 BUFFOR_W7 = W7>>>12
-W7 = W5
-W6 = W4
-W5 = W3
-W4 = W2
-W3 = W1
-W2 = W0
-W1 = BUFFOR_W7
-W0 = BUFFOR_W6
-*/
+u_W7 = W5
+u_W6 = W4
+u_W5 = W3
+u_W4 = W2
+u_W3 = W1
+u_W2 = W0
+u_W1 = BUFFOR_W7
+u_W0 = BUFFOR_W6
+updated_KS =join[u_W0#u_W1,u_W2#u_W3,u_W4#u_W5,u_W6#u_W7]
+
+// Tu się kończy funkcja gift128.cry
+
