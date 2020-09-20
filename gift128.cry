@@ -4,19 +4,25 @@ gift_rc =[0x00000001, 0x00000003, 0x00000007, 0x0000000F, 0x0000001F, 0x0000003E
     0x0000001C, 0x00000038, 0x00000031, 0x00000023, 0x00000006, 0x0000000D, 0x0000001B, 0x00000036, 0x0000002D, 0x0000001A]
 
 
+
 K =[ 0x00,0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F]
 P =[ 0x00,0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F]
 
 //Inicjalizacja S
-S = [S0,S1,S2,S3]
+//Przykladowe wywolanie S(P)
+S: [16][8] -> [4][32][1]
+S s= [S0,S1,S2,S3] 
     where
-    sP = split`{128} (join P)
-    S0 = reverse(sP @@ [0,4 .. 127])
-    S1 = reverse(sP @@ [1,5 .. 127])
-    S2 = reverse(sP @@ [2,6 .. 127])
-    S3 = reverse(sP @@ [3,7 .. 127])
+        sP = split`{128} (join P)
+        S0 = reverse(sP @@ [0,4 .. 127])
+        S1 = reverse(sP @@ [1,5 .. 127])
+        S2 = reverse(sP @@ [2,6 .. 127])
+        S3 = reverse(sP @@ [3,7 .. 127])
 
-KS =  [W0#W1,W2#W3,W4#W5,W6#W7]
+
+// Przykladowe wywolanie KS(K)
+KS: [16][8] -> [4][32][1]
+KS ks = [W0#W1,W2#W3,W4#W5,W6#W7]
     where
         KSmatrix = map (\x -> (head x) # (last x)) (groupBy`{2} (reverse (map reverse K)))
         nsW0 = KSmatrix @ 0 
@@ -35,76 +41,73 @@ KS =  [W0#W1,W2#W3,W4#W5,W6#W7]
         W6 = split`{16} nsW6
         nsW7 = KSmatrix @ 7
         W7 = split`{16} nsW7
-
-
-
-//------Od tego momentu powinna rozpocząć się  pętla i wykonać 39 razy. 
-
-//Subcells
-Subcells = [S0_0_0 , S1_1_1 , S2_2_2 , S3_3_3_3]
+// Przykladowe wywolanie - Subcells(S(P))
+Subcells:[4][32][1] -> [4][32][1]
+Subcells tab = [S000 , S11 , S22 , S333]
     where
-        S1_1 = (S@1) ^ ((S@0) && (S@2) )
-        S0_0 = (S@0) ^ (S1_1 && (S@3) )
-        S2_2 = S1_1 ^ (S0_0 || (S@2) )
-        S3_3 = (S@3) ^ S2_2
-        S1_1_1 = S1_1 ^ S3_3
-        S3_3_3 = ~S3_3
-        S2_2_2 = S2_2 ^ (S0_0 && S1_1_1)
-        BUFFOR_S = S0_0
-        S0_0_0 = S3_3_3
-        S3_3_3_3 = BUFFOR_S
-//Permutacja S
-PermBits = [pb_S0,pb_S1,pb_S2,pb_S3]
+        S1 =(tab@1) ^ ((tab@0) && (tab@2))
+        S0 = (tab@0) ^ (S1 && (tab@3) )
+        S2 = S1 ^ (S0 || (tab@2) )
+        S3 = (tab@3) ^ S2
+        S11 = S1 ^ S3
+        S33= ~S3
+        S22 = S2 ^ (S0 && S11)
+        BUFFOR_S = S0
+        S000= S33
+        S333 = BUFFOR_S
+//Przykladowe wywolanie - PermBits(Subcells(S(P)))) (KS(K))
+PermBits:[4][32][1] -> [4][32][1]        
+PermBits sc = [S0,S1,S2,S3]
     where
-        pb_S0 = (Subcells@0) @@ [28,24 .. 0] # (Subcells@0) @@ [31,27 .. 3] # (Subcells@0) @@ [30,26 .. 2] # (Subcells@0) @@ [29,25 .. 1]
-        pb_S1 = (Subcells@1) @@ [29,25 .. 1] # (Subcells@1) @@ [28,24 .. 0] # (Subcells@1) @@ [31,27 .. 3] # (Subcells@1) @@ [30,26 .. 2]
-        pb_S2 = (Subcells@2) @@ [30,26 .. 2] # (Subcells@2) @@ [29,25 .. 1] # (Subcells@2) @@ [28,24 .. 0] # (Subcells@2) @@ [31,27 .. 3]
-        pb_S3 = (Subcells@3) @@ [31,27 .. 3] # (Subcells@3) @@ [30,26 .. 2] # (Subcells@3) @@ [29,25 .. 1] # (Subcells@3) @@ [28,24 .. 0]
-//Dodoawanie klucza rundy
-AddRoundKey = [PermBits@0,ARK_S1,ARK_S2,PermBits@3]
+        S0 = (sc@0) @@ [28,24 .. 0] # (sc@0) @@ [31,27 .. 3] # (sc@0) @@ [30,26 .. 2] # (sc@0) @@ [29,25 .. 1]
+        S1 = (sc@1) @@ [29,25 .. 1] # (sc@1) @@ [28,24 .. 0] # (sc@1) @@ [31,27 .. 3] # (sc@1) @@ [30,26 .. 2]
+        S2 = (sc@2) @@ [30,26 .. 2] # (sc@2) @@ [29,25 .. 1] # (sc@2) @@ [28,24 .. 0] # (sc@2) @@ [31,27 .. 3]
+        S3 = (sc@3) @@ [31,27 .. 3] # (sc@3) @@ [30,26 .. 2] # (sc@3) @@ [29,25 .. 1] # (sc@3) @@ [28,24 .. 0]
+
+//przykladowe wywolanie - AddRoundKey (PermBits(Subcells(S(P)))) (KS(K))
+AddRoundKey:[4][32][1] -> [4][32][1] -> [4][32][1]   
+AddRoundKey pb aKS = [pb@0,ARK_S1,ARK_S2,pb@3]
     where
-        ARK_S2 = (PermBits@3) ^ (take`{16} (KS@1) # drop`{16} (KS@1))
-        ARK_S1 = (PermBits@2) ^ (take`{16} (KS@3) # drop`{16} (KS@3))
-//Dodawanie stałej rundowej
-AddRoundConstant  =[PermBits@0,AddRoundKey@1,AddRoundKey@2,SARC_3]
+        ARK_S2 = (pb@3) ^ (take`{16} (aKS@1) # drop`{16} (aKS@1))
+        ARK_S1 = (pb@2) ^ (take`{16} (aKS@3) # drop`{16} (aKS@3))
+
+//przykladowe wywolanie - AddRoundConstant (AddRoundKey (PermBits(Subcells(S(P)))) (KS(K))) (gift_rc) (0)
+AddRoundConstant: [4][32][1] ->[40][32] ->[8] -> [4][32][1]
+AddRoundConstant ark grc nr = [ark@0,ark@1,ark@2,SARC_3]
     where
-        SARC_3 = (AddRoundKey@3) ^( (split`{32} 0x80000000) ^ (split`{32}(gift_rc @ 0)))
+        SARC_3 = (ark@3) ^( (split`{32} 0x80000000) ^ (split`{32}(grc @ nr)))
 
-
-//  KSmatrix UPDATE
-KSUPDATE = [u_W0#u_W1,u_W2#u_W3,u_W4#u_W5,u_W6#u_W7]
+//przykladowe uzycie - KSUPDATE (KS(K))
+KSUPDATE: [4][32][1] -> [4][32][1]
+KSUPDATE ks = [W0#W1,W2#W3,W4#W5,W6#W7]
     where
-        BUFFOR_W6 = take`{16} (KS@3)>>>2 
-        BUFFOR_W7 = drop`{16} (KS@3)>>>12
-        u_W7 = drop`{16} (KS@2)
-        u_W6 = take`{16} (KS@2)
-        u_W5 = drop`{16} (KS@1)
-        u_W4 = take`{16} (KS@1)
-        u_W3 = drop`{16} (KS@0)
-        u_W2 = take`{16} (KS@0)
-        u_W1 = BUFFOR_W7
-        u_W0 = BUFFOR_W6
-        
+        BUFFOR_W6 = take`{16} (ks@3)>>>2 
+        BUFFOR_W7 = drop`{16} (ks@3)>>>12
+        W7 = drop`{16} (ks@2)
+        W6 = take`{16} (ks@2)
+        W5 = drop`{16} (ks@1)
+        W4 = take`{16} (ks@1)
+        W3 = drop`{16} (ks@0)
+        W2 = take`{16} (ks@0)
+        W1 = BUFFOR_W7
+        W0 = BUFFOR_W6
 
+//Pierwsza runda
+//AddRoundConstant (AddRoundKey (PermBits(Subcells(S(P)))) (KS(K))) (gift_rc) (0)
+//KSUPDATE (KS(K))
+//Druga runda
+//AddRoundConstant (AddRoundKey (PermBits(Subcells(AddRoundConstant (AddRoundKey (PermBits(Subcells(S(P)))) (KS(K))) (gift_rc) (0)))) (KSUPDATE(KS(K)))) (gift_rc) (1)
+//KSUPDATE (KSUPDATE (KS(K)))
+//Wniosek... Trzeba stworzyć funkcje rekurencyjna.
 
+// dla S funkcja musi mieć dwa parametry- wszystkie funkcje złożone aż do AddRoundConstant i nr iteracji 
+// dla KS ... KS jest updatowane przez KSUPDATE , A POTEM KSUPDATE(KS(K)) JEST ZNOWU UPDATOWANE AŻ DO 39 ITERACJI 
+increment (x : [8]) = x + 1
 
-
-
-
-
-/*
-// Tu się ma kończyć pętla
-//15 wrzesień- Miałem problem z uporządkowaniem kodu i inicjalizacją funkcji 40 rund. Wieczorem wpadłem na pomysł aby każdą operację
-// taką jak subcells, permbits itp... załadować w funkcję. Mimo straconego czasu  zreformowałem kod gdzie każda operacja jest funkcją. 
-// Ułatwi mi to utworzenie funkcji rekurencyjnej(Bądź rekursynej.) aby wykonać ten sam kod 39 razy. Ponieważ nie da się nadpisywać zmiennych 
-//  jak w imperatywnych językach programowania, po prostu wszystko co dotychczas napisałem musi zostać wielokrotnie powtórzone. 
-// 16 września planowana jest zakończenie tego etapu algorytmu. Aby za pomocą funkcji GIFT128 P K = [C0.....C15] osiągnąć ctxt po 40 rundach.
-// Wiemy przecież że kod wykonuje się od dołu do góry , to nadpisywanie 40 krotnie wszystkich operacji jest zbędne. Zamieszczenie owej funkcji 
-// GIFT128 która jest naszym celem może rozpocząć inicjację od samego dołu. Więc Ten schemat myślenia pozwoli na rozwiazanie dzisiejszego problemu.
-//Od teraz wszystko w programie jest funkcją, nie ma niepotrzebnych zmiennych które trzeba było by nadpisywać w sposób IMPERATYWNY.
-// TODO:
-// Rozpoczęcie funkci gdzie wchodzącymi parametrami jest K, P i Wychodzącym CTXT
-// Inicjalizacja pętli dla 40 rund
-*/
-
+end : [4][32][1] -> [4][32][1]
+end sp kaes nr = x
+    where x =
+            if nr < 40 then 
+            AddRoundConstant (AddRoundKey (PermBits(Subcells(sp))) (kaes)) (increment(nr))
+            else  True//asdasdasda
 
