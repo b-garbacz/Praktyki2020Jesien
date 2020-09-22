@@ -4,7 +4,7 @@ gift_rc =[0x00000001, 0x00000003, 0x00000007, 0x0000000F, 0x0000001F, 0x0000003E
     0x0000001C, 0x00000038, 0x00000031, 0x00000023, 0x00000006, 0x0000000D, 0x0000001B, 0x00000036, 0x0000002D, 0x0000001A]
 
 
-
+// wektory testowe
 K =[ 0x00,0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F]
 P =[ 0x00,0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F]
 
@@ -19,7 +19,7 @@ S s= [S0,S1,S2,S3]
         S2 = reverse(sP @@ [2,6 .. 127])
         S3 = reverse(sP @@ [3,7 .. 127])
 
-
+// Funkcja KS
 // Przykladowe wywolanie KS(K)
 KS: [16][8] -> [4][32][1]
 KS ks = [W0#W1,W2#W3,W4#W5,W6#W7]
@@ -41,6 +41,7 @@ KS ks = [W0#W1,W2#W3,W4#W5,W6#W7]
         W6 = split`{16} nsW6
         nsW7 = KSmatrix @ 7
         W7 = split`{16} nsW7
+// Operacja Subcells jako funkcja
 // Przykladowe wywolanie - Subcells(S(P))
 Subcells:[4][32][1] -> [4][32][1]
 Subcells tab = [S000 , S11 , S22 , S333]
@@ -55,6 +56,7 @@ Subcells tab = [S000 , S11 , S22 , S333]
         BUFFOR_S = S0
         S000= S33
         S333 = BUFFOR_S
+//Operacja Permbits(Permutacja) jako funckja
 //Przykladowe wywolanie - PermBits(Subcells(S(P)))) (KS(K))
 PermBits:[4][32][1] -> [4][32][1]        
 PermBits sc = [S0,S1,S2,S3]
@@ -63,20 +65,20 @@ PermBits sc = [S0,S1,S2,S3]
         S1 = (sc@1) @@ [29,25 .. 1] # (sc@1) @@ [28,24 .. 0] # (sc@1) @@ [31,27 .. 3] # (sc@1) @@ [30,26 .. 2]
         S2 = (sc@2) @@ [30,26 .. 2] # (sc@2) @@ [29,25 .. 1] # (sc@2) @@ [28,24 .. 0] # (sc@2) @@ [31,27 .. 3]
         S3 = (sc@3) @@ [31,27 .. 3] # (sc@3) @@ [30,26 .. 2] # (sc@3) @@ [29,25 .. 1] # (sc@3) @@ [28,24 .. 0]
-
+//Operacja Dodania klucza rundy jako funkcja
 //przykladowe wywolanie - AddRoundKey (PermBits(Subcells(S(P)))) (KS(K))
 AddRoundKey:[4][32][1] -> [4][32][1] -> [4][32][1]   
 AddRoundKey pb aKS = [pb@0,ARK_S1,ARK_S2,pb@3]
     where
         ARK_S2 = (pb@3) ^ (take`{16} (aKS@1) # drop`{16} (aKS@1))
         ARK_S1 = (pb@2) ^ (take`{16} (aKS@3) # drop`{16} (aKS@3))
-
+//Dodanie LSFT jako funkcja
 //przykladowe wywolanie - AddRoundConstant (AddRoundKey (PermBits(Subcells(S(P)))) (KS(K))) (gift_rc) (0)
 AddRoundConstant: [4][32][1] ->[40][32] ->[8] -> [4][32][1]
 AddRoundConstant ark grc nr = [ark@0,ark@1,ark@2,SARC_3]
     where
         SARC_3 = (ark@3) ^( (split`{32} 0x80000000) ^ (split`{32}(grc @ nr)))
-
+// Aktualizacja Klucza jako funkcja
 //przykladowe uzycie - KSUPDATE (KS(K))
 KSUPDATE: [4][32][1] -> [4][32][1]
 KSUPDATE ks = [W0#W1,W2#W3,W4#W5,W6#W7]
@@ -100,14 +102,56 @@ KSUPDATE ks = [W0#W1,W2#W3,W4#W5,W6#W7]
 //KSUPDATE (KSUPDATE (KS(K)))
 //Wniosek... Trzeba stworzyć funkcje rekurencyjna.
 
-// dla S funkcja musi mieć dwa parametry- wszystkie funkcje złożone aż do AddRoundConstant i nr iteracji 
-// dla KS ... KS jest updatowane przez KSUPDATE , A POTEM KSUPDATE(KS(K)) JEST ZNOWU UPDATOWANE AŻ DO 39 ITERACJI 
+//Funkcja inkrementująca
 increment (x : [8]) = x + 1
+//FunkcjaT która zamienia S i KS i numer rundy na tuple
+t s ks nr =(x,y,z)
+    where x =s
+    where y= ks
+    where z = nr 
 
-end : [4][32][1] -> [4][32][1]
-end sp kaes nr = x
-    where x =
-            if nr < 40 then 
-            AddRoundConstant (AddRoundKey (PermBits(Subcells(sp))) (kaes)) (increment(nr))
-            else  True//asdasdasda
+// Funkcja inicjalizująca rundę, została zmodyfikowana w ten sposób ze tablice ze stałymi dla LSFR są już zawarte w funkcji 
+//Co pozwala na ograniczenie jednego parametru wejściowego co naprawdę ułatwia wywołanie funkcji
+//giftround: [4][32][1] -> [4][32][1] ->[8]  ->([4][32][1],[4][32][1])
+giftround (s, ks, nr)  =(x,y,nr)
+    where   gift_rc =[0x00000001, 0x00000003, 0x00000007, 0x0000000F, 0x0000001F, 0x0000003E, 0x0000003D, 0x0000003B, 0x00000037, 0x0000002F,
+    0x0000001E, 0x0000003C, 0x00000039, 0x00000033, 0x00000027, 0x0000000E, 0x0000001D, 0x0000003A, 0x00000035, 0x0000002B,
+    0x00000016, 0x0000002C, 0x00000018, 0x00000030, 0x00000021, 0x00000002, 0x00000005, 0x0000000B, 0x00000017, 0x0000002E,
+    0x0000001C, 0x00000038, 0x00000031, 0x00000023, 0x00000006, 0x0000000D, 0x0000001B, 0x00000036, 0x0000002D, 0x0000001A]
+    where   x = (AddRoundConstant(AddRoundKey(PermBits(Subcells(s))) (ks)) (gift_rc) (nr))
+    where   y = (KSUPDATE(ks))
+    //        if nr == 0 then  giftround((x) (y) (increment(nr))) else giftround((x) (y) (increment(nr)))
 
+z=giftround (t (S(P)) (KS(K)) (0))
+// Funkcja rekurencyjna która wykonuje 40 rund
+//rec (giftround(t(S(P)) (KS(K)) (0)))
+rec (s, ks, nr) = ns
+    where ns = 
+                if nr < 38 then rec (giftround(t (s) (ks) (increment(nr))))
+                else  giftround(t (s) (ks) (increment(nr)))
+//Funkcja która umożliwia powrót S do stanu jak przez zamianą w tuple
+returnS (s,ks,nr) = [S0,S1,S2,S3]
+    where S0 = s@0
+    where S1 = s@1
+    where S2 = s@2
+    where S3 = s@3
+xd= returnS(rec(giftround(t(S(P)) (KS(K)) (0))))
+//Sprawdzenie output. Jest źle wywołana ponieważ ReturnS należy załadować do funkcji InicjalizacjiS  w sposób rewersyjny. 
+tabC s = [C0,C1,C2,C3,C4,C5,C6,C7,C8,C9,C10,C11,C12,C13,C14,C14] // to jest zle musze użyć 
+    where 
+        C0 = join(s@0)>>24
+        C1 = join(s@0)>>16
+        C2 = join(s@0)>>8
+        C3 = join(s@0)
+        C4 = join(s@1)>>24
+        C5 = join(s@1)>>16
+        C6 = join(s@1)>>8
+        C7 = join(s@1)
+        C8 = join(s@2)>>24
+        C9 = join(s@2)>>16
+        C10 = join(s@2)>>8
+        C11 = join(s@2)
+        C12 = join(s@3)>>24
+        C13 = join(s@3)>>16
+        C14 = join(s@3)>>8
+        C15 = join(s@3)
