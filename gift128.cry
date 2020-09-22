@@ -10,14 +10,24 @@ P =[ 0x00,0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C
 
 //Inicjalizacja S
 //Przykladowe wywolanie S(P)
+load : {a} [128][a] -> [4][32][a]
+load(elts) = reverse (transpose cols)
+  where cols : [32][4][a]
+        cols = split elts
+loadBits : [128] -> [4][32]
+loadBits(vector) = reverse (transpose cols)
+  where cols : [32][4]
+        cols = split vector
+
+sP = split`{128} (join P)
 S: [16][8] -> [4][32][1]
 S s= [S0,S1,S2,S3] 
     where
-        sP = split`{128} (join P)
-        S0 = reverse(sP @@ [0,4 .. 127])
-        S1 = reverse(sP @@ [1,5 .. 127])
-        S2 = reverse(sP @@ [2,6 .. 127])
-        S3 = reverse(sP @@ [3,7 .. 127])
+        sP = split`{128} (join s)
+        S0 = reverse((sP) @@ [0,4 .. 127])
+        S1 = reverse((sP) @@ [1,5 .. 127])
+        S2 = reverse((sP) @@ [2,6 .. 127])
+        S3 = reverse((sP) @@ [3,7 .. 127])
 
 // Funkcja KS
 // Przykladowe wywolanie KS(K)
@@ -48,7 +58,7 @@ Subcells tab = [S000 , S11 , S22 , S333]
     where
         S1 =(tab@1) ^ ((tab@0) && (tab@2))
         S0 = (tab@0) ^ (S1 && (tab@3) )
-        S2 = S1 ^ (S0 || (tab@2) )
+        S2 = (tab@2) ^ (S0 || S1 ) 
         S3 = (tab@3) ^ S2
         S11 = S1 ^ S3
         S33= ~S3
@@ -72,7 +82,7 @@ AddRoundKey pb aKS = [pb@0,ARK_S1,ARK_S2,pb@3]
     where
         ARK_S2 = (pb@3) ^ (take`{16} (aKS@1) # drop`{16} (aKS@1))
         ARK_S1 = (pb@2) ^ (take`{16} (aKS@3) # drop`{16} (aKS@3))
-//Dodanie LSFT jako funkcja
+//Dodanie LSFR jako funkcja
 //przykladowe wywolanie - AddRoundConstant (AddRoundKey (PermBits(Subcells(S(P)))) (KS(K))) (gift_rc) (0)
 AddRoundConstant: [4][32][1] ->[40][32] ->[8] -> [4][32][1]
 AddRoundConstant ark grc nr = [ark@0,ark@1,ark@2,SARC_3]
@@ -83,8 +93,8 @@ AddRoundConstant ark grc nr = [ark@0,ark@1,ark@2,SARC_3]
 KSUPDATE: [4][32][1] -> [4][32][1]
 KSUPDATE ks = [W0#W1,W2#W3,W4#W5,W6#W7]
     where
-        BUFFOR_W6 = take`{16} (ks@3)>>>2 
-        BUFFOR_W7 = drop`{16} (ks@3)>>>12
+        BUFFOR_W6 = (take`{16} (ks@3)>>>2 || take`{16} (ks@3)<<<14)
+        BUFFOR_W7 = (drop`{16} (ks@3)>>>12 || drop`{16} (ks@3)<<<4)
         W7 = drop`{16} (ks@2)
         W6 = take`{16} (ks@2)
         W5 = drop`{16} (ks@1)
@@ -94,25 +104,17 @@ KSUPDATE ks = [W0#W1,W2#W3,W4#W5,W6#W7]
         W1 = BUFFOR_W7
         W0 = BUFFOR_W6
 
-//Pierwsza runda
-//AddRoundConstant (AddRoundKey (PermBits(Subcells(S(P)))) (KS(K))) (gift_rc) (0)
-//KSUPDATE (KS(K))
-//Druga runda
-//AddRoundConstant (AddRoundKey (PermBits(Subcells(AddRoundConstant (AddRoundKey (PermBits(Subcells(S(P)))) (KS(K))) (gift_rc) (0)))) (KSUPDATE(KS(K)))) (gift_rc) (1)
-//KSUPDATE (KSUPDATE (KS(K)))
-//Wniosek... Trzeba stworzyć funkcje rekurencyjna.
-
 //Funkcja inkrementująca
 increment (x : [8]) = x + 1
 //Funkcja t która zamienia S i KS i numer rundy na tuple
 t s ks nr =(x,y,z)
-    where x =s
-    where y= ks
+    where x = s
+    where y = ks
     where z = nr 
 
 // Funkcja inicjalizująca rundę, została zmodyfikowana w ten sposób ze tablice ze stałymi dla LSFR są już zawarte w funkcji 
 //Co pozwala na ograniczenie jednego parametru wejściowego co naprawdę ułatwia wywołanie funkcji
-//giftround: [4][32][1] -> [4][32][1] ->[8]  ->([4][32][1],[4][32][1])
+giftround: ([4][32][1] , [4][32][1],[8])  ->([4][32][1],[4][32][1],[8])
 giftround (s, ks, nr)  =(x,y,nr)
     where   gift_rc =[0x00000001, 0x00000003, 0x00000007, 0x0000000F, 0x0000001F, 0x0000003E, 0x0000003D, 0x0000003B, 0x00000037, 0x0000002F,
     0x0000001E, 0x0000003C, 0x00000039, 0x00000033, 0x00000027, 0x0000000E, 0x0000001D, 0x0000003A, 0x00000035, 0x0000002B,
@@ -120,45 +122,55 @@ giftround (s, ks, nr)  =(x,y,nr)
     0x0000001C, 0x00000038, 0x00000031, 0x00000023, 0x00000006, 0x0000000D, 0x0000001B, 0x00000036, 0x0000002D, 0x0000001A]
     where   x = (AddRoundConstant(AddRoundKey(PermBits(Subcells(s))) (ks)) (gift_rc) (nr))
     where   y = (KSUPDATE(ks))
-    //        if nr == 0 then  giftround((x) (y) (increment(nr))) else giftround((x) (y) (increment(nr)))
 
-z=giftround (t (S(P)) (KS(K)) (0))
 // Funkcja rekurencyjna która wykonuje 40 rund
-//rec (giftround(t(S(P)) (KS(K)) (0)))
+//rec (giftround(t(S(P)) (KS(K)) (0))) Rekurencyjnie
+rec : ([4][32][1], [4][32][1], [8]) -> ([4][32][1], [4][32][1],[8])
 rec (s, ks, nr) = ns
     where ns = 
                 if nr < 38 then rec (giftround(t (s) (ks) (increment(nr))))
                 else  giftround(t (s) (ks) (increment(nr)))
 //Funkcja która umożliwia powrót S do stanu jak przez zamianą w tuple
+returnS: ([4][32][1], [4][32][1], [8]) -> [4][32][1]
 returnS (s,ks,nr) = [S0,S1,S2,S3]
     where S0 = s@0
     where S1 = s@1
     where S2 = s@2
     where S3 = s@3
-xd= returnS(rec(giftround(t(S(P)) (KS(K)) (0))))
+//xd= returnS(rec(giftround(t(S(P)) (KS(K)) (0))))
 
 //Funkcja umożliwająca zmianę typu macierzy końcowej na wektor wyjściowy 
 
-Sback [S0,S1,S2,S3]  = [c0,c1,c2,c3,c4,c5,c6,c7,c8,c9,c10,c11,c12,c13,c14,c15]
+Sback: [4][32][1] -> [16][8]
+Sback [old0,old1,old2,old3]  = [c0,c1,c2,c3,c4,c5,c6,c7,c8,c9,c10,c11,c12,c13,c14,c15]
     where 
-        sP = join([(reverse(S0)),(reverse(S1)),(reverse(S2)),(reverse(S3))])
-        c0 = join((sP @@ [0,32 ..96]) # (sP @@ [1,33 ..97]))
-        c1 = join((sP @@ [2,34 ..98]) # (sP @@ [3,35 ..99]))
-        c2 = join((sP @@ [4,36 ..100]) # (sP @@ [5,37 ..101]))
-        c3 = join((sP @@ [6,38 ..102]) # (sP @@ [7,39 ..103]))
-        c4 = join((sP @@ [8,40 ..104]) # (sP @@ [9,41 ..105]))
-        c5 = join((sP @@ [10,42 ..106]) # (sP @@ [11,43 ..107]))
-        c6 = join((sP @@ [12,44 ..108]) # (sP @@ [13,45 ..109]))
-        c7 = join((sP @@ [14,46 ..110]) # (sP @@ [15,47 ..111]))
-        c8 = join((sP @@ [16,48 ..112]) # (sP @@ [17,49 ..113]))
-        c9 = join((sP @@ [18,50 ..114]) # (sP @@ [19,51 ..115]))
-        c10 = join((sP @@ [20,52 ..116]) # (sP @@ [21,53 ..117]))
-        c11 = join((sP @@ [22,54 ..118]) # (sP @@ [23,55 ..119]))
-        c12 = join((sP @@ [24,56 ..120]) # (sP @@ [25,57 ..121]))
-        c13 = join((sP @@ [26,58 ..122]) # (sP @@ [27,59 ..123]))
-        c14 = join((sP @@ [28,60 ..124]) # (sP @@ [29,61 ..125]))
-        c15 = join((sP @@ [30,62 ..126]) # (sP @@ [31,63 ..127])) 
-//Funkcja całego algorytmu gift128 
-gift128 Plaintext Key Nr = output
+        sBack = join([(reverse(old0)),(reverse(old1)),(reverse(old2)),(reverse(old3))])
+        c0 = join((sBack @@ [0,32 ..96]) # (sBack @@ [1,33 ..97]))
+        c1 = join((sBack @@ [2,34 ..98]) # (sBack @@ [3,35 ..99]))
+        c2 = join((sBack @@ [4,36 ..100]) # (sBack @@ [5,37 ..101]))
+        c3 = join((sBack @@ [6,38 ..102]) # (sBack @@ [7,39 ..103]))
+        c4 = join((sBack @@ [8,40 ..104]) # (sBack @@ [9,41 ..105]))
+        c5 = join((sBack @@ [10,42 ..106]) # (sBack @@ [11,43 ..107]))
+        c6 = join((sBack @@ [12,44 ..108]) # (sBack @@ [13,45 ..109]))
+        c7 = join((sBack @@ [14,46 ..110]) # (sBack @@ [15,47 ..111]))
+        c8 = join((sBack @@ [16,48 ..112]) # (sBack @@ [17,49 ..113]))
+        c9 = join((sBack @@ [18,50 ..114]) # (sBack @@ [19,51 ..115]))
+        c10 = join((sBack @@ [20,52 ..116]) # (sBack @@ [21,53 ..117]))
+        c11 = join((sBack @@ [22,54 ..118]) # (sBack @@ [23,55 ..119]))
+        c12 = join((sBack @@ [24,56 ..120]) # (sBack @@ [25,57 ..121]))
+        c13 = join((sBack @@ [26,58 ..122]) # (sBack @@ [27,59 ..123]))
+        c14 = join((sBack @@ [28,60 ..124]) # (sBack @@ [29,61 ..125]))
+        c15 = join((sBack @@ [30,62 ..126]) # (sBack @@ [31,63 ..127])) 
+
+//Funkcja całego algorytmu gift128 Sback(returnS(rec(giftround(t(S(P)) (KS(K)) (0)))))
+gift128: [16][8] -> [16][8] -> [16][8]
+gift128 Plaintext Key = output
     where
-        output = Sback(returnS(rec(giftround(t(S(Plaintext)) (KS(Key)) (Nr)))))
+        output = Sback(returnS(rec(giftround(t(S(Plaintext)) (KS(Key)) (0)))))
+
+
+P2 =[0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,0xff, 0xff, 0xff, 0xff, 0xff]
+P3 =[0xf6, 0x45, 0x91, 0x4a, 0x8b, 0xc0, 0xc2, 0xff, 0xf1, 0x90, 0x3b,0x8f, 0xce, 0x91, 0x34, 0xb5]
+CTXT = [0xfa, 0x35, 0x95, 0xb5, 0xc7, 0x34, 0x81, 0x04, 0xc6, 0xdc, 0x43,0x43, 0xc9, 0x62, 0xb3, 0xfd]
+//[0xf5, 0x46, 0x22, 0x01, 0xc7, 0x74, 0x3a, 0xbc, 0x32, 0xe7, 0xf7,
+ //0x87, 0x79, 0x5d, 0x43, 0x8e]
